@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   
+    
+
+    <script src="signalr.min.js"></script>
+    <script src="jquery.min.js"></script>
+    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> -->
+
+        <!-- <link href="~/Dxtreme/css/dx.common.css" rel="stylesheet" type="text/css" > -->
+        <link href="Dxtreme/css/dx.light.css" rel="stylesheet" type="text/css" >        
+        <link rel="stylesheet" type="text/css" href="Dxtreme/css/dx.common.css" />
+        <link rel="stylesheet" type="text/css" href="Dxtreme/css/dx.softblue.css" />
+        <link rel="stylesheet" type="text/css" href="styles.css" />
+ 
+        
+        <script src="Dxtreme/js/jszip.min.js"></script>
+        <script src="Dxtreme/js/dx.all.js"></script>
+        <script src="Dxtreme/js/localization/dx.messages.tr.js"></script>       
+           
+       
+</head>
+
+<body class="dx-viewport">
+  <div class="home-page" >HOME PAGE</div> 
+    <div class="demo-container">
+        <a href="Home.html">
+            <input  type="button" class="button" value="Detail" >
+         </a>
+        
+        <div id="gridContainer"></div>
+       
+    </div>
+    <!-- <table id="messages" class="table table-bordered" style="width:100%">
+        <thead>
+            <tr>
+                <th>Kod</th>
+                <th>Okuyucu</th>
+                <th>Uzaklık</th>
+                <th>Veri No</th>
+                <th>Tarih</th>
+            </tr>
+        </thead>
+        <tbody id="jobs">
+
+        </tbody>
+
+    </table> -->
+</body>
+
+<script>
+ $(document).ready(() => {
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:5003/jobhub")
+            .build();
+        connection.start();
+        connection.on("receiveMessage", Job => {
+           
+            var parsedJob = JSON.parse(Job);
+
+            setGrid(parsedJob);
+
+            var d = new Date(parsedJob.JobModel.Tarih);
+
+            dformat = [d.getMonth()+1,
+               d.getDate(),
+               d.getFullYear()].join('/')+' '+
+              [d.getHours(),
+               d.getMinutes(),
+               d.getSeconds()].join(':');
+               
+        });
+      
+    });
+
+  
+    var testData;
+    var arr = [];
+
+function setGrid(parsedJob){
+    
+    var data = Object.fromEntries(Object.entries(parsedJob.JobModel));
+
+    var result = arr.find(s=>s.Key == data.Kod + "-" + data.Okuyucu);
+
+    if(result != undefined){
+        result.Avg = (result.Avg*result.Count + data.Uzaklik)/(result.Count+1);
+        result.Count+=1;
+    }else{
+        arr.push({
+            Key :data.Kod + "-" + data.Okuyucu,
+            Avg : data.Uzaklik,
+            Count : 1,
+           Kod:data.Kod,
+           Okuyucu:data.Okuyucu
+        });
+    }
+
+    //console.log(arr);
+
+    // testData = Object.fromEntries(Object.entries(parsedJob.JobModel));
+
+    // arr.push(testData);
+    // arr.forEach(function(item){item.groupProperty=item.Kod+'-'+item.Okuyucu})
+    
+
+    $("#gridContainer").dxDataGrid({
+        dataSource: arr,
+        // keyExpr: "ID",
+        showBorders: true,
+        repaintChangesOnly: true,
+            highlightChanges: true,
+            
+        columns: [{
+                dataField: "Kod",
+                width:200,
+                caption: "Kod",
+                 
+
+            },
+            {
+                dataField: "Okuyucu",
+                width: 200,
+                caption: "Okuyucu",
+             }, 
+             {
+                dataField: "Avg",
+                width: 200,
+                caption:"Avg",
+           
+                
+            }, 
+            // {
+            //     dataField: "groupProperty",        //gruplanacak field
+            //     groupIndex: 0,
+            //     caption:"Kod-Okuyucu",
+              
+            // },
+            
+                            
+           {
+                caption: "Count",
+                dataField: "Count",
+                width:200,
+            }
+            // , {
+            //     caption: "VeriNo",
+            //     dataField: "VeriNo",
+                
+                
+            // }, {
+            //     dataField: "Tarih",
+            //     dataType: "date",
+            //     caption:"Tarih",
+            //     format: "yyyy/MM/dd HH:mm:ss",
+               
+               
+            // }
+        ],
+        sortByGroupSummaryInfo: [{
+            summaryItem: "count"
+        }],
+        summary: {
+            groupItems: [{
+                column: "Kod",
+                summaryType: "count",
+                displayFormat: "{0} ",
+            },
+            
+            {
+                column: "Uzaklik",
+                summaryType: "avg",
+                showInGroupFooter: false,
+                alignByColumn: true
+            }]
+        }
+    });
+};
+
+
+
+    // $(document).ready(() => {
+    //     var connection = new signalR.HubConnectionBuilder()
+    //         .withUrl("https://localhost:5003/jobhub")
+    //         .build();
+    //     connection.start();
+    //     connection.on("receiveMessage", Job => {
+           
+    //         var parsedJob = JSON.parse(Job);
+
+            // console.log(parsedJob);
+            // var d = new Date(parsedJob.JobModel.Tarih);
+
+            // dformat = [d.getMonth()+1,
+            //    d.getDate(),
+            //    d.getFullYear()].join('/')+' '+
+            //   [d.getHours(),
+            //    d.getMinutes(),
+            //    d.getSeconds()].join(':');
+             
+    //         var html = '<tr><td>' + parsedJob.JobModel.Kod + '</td>'
+    //             + '<td>' + parsedJob.JobModel.Okuyucu + '</td>'
+    //             + '<td>' + parsedJob.JobModel.Uzaklik + '</td>'
+    //             + '<td>' + parsedJob.JobModel.VeriNo + '</td>'
+    //             + '<td>' + dformat + '</td>'
+    //             + '</tr>';
+    //         $('#messages tbody').append(html);
+    //     });
+   
+    // });
+   
+</script>
+
+</html>
+<!-- format: "yyyy/MM/dd HH:mm:ss" -->
